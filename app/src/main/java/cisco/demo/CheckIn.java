@@ -14,10 +14,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Handler;
 
 /**
  * Created by irygiels on 16.03.16.
@@ -64,7 +64,6 @@ public class CheckIn extends AppCompatActivity {
     public void checkIn(View view) throws InterruptedException {
         if(textView.getText().toString().equals("CHECK IN! (3)")){
             lista = new ArrayList<>();
-            getDistanceSet(0);
             final ProgressDialog progress = new ProgressDialog(this);
             progress.setTitle("Loading");
             progress.setMessage("Wait while loading coordinates...");
@@ -81,9 +80,10 @@ public class CheckIn extends AppCompatActivity {
                 }
             }.start();
 // To dismiss the dialog
-        textView.setText("CHECK IN! (2)");}
+            getDistanceSet(0);
+
+            textView.setText("CHECK IN! (2)");}
         else if(textView.getText().toString().equals("CHECK IN! (2)")){
-            getDistanceSet(1);
             final ProgressDialog progress = new ProgressDialog(this);
             progress.setTitle("Loading");
             progress.setMessage("Wait while loading coordinates...");
@@ -99,10 +99,10 @@ public class CheckIn extends AppCompatActivity {
                     progress.dismiss();
                 }
             }.start();
+            getDistanceSet(1);
 
             textView.setText("CHECK IN! (1)");}
         else if(textView.getText().toString().equals("CHECK IN! (1)")){
-            getDistanceSet(2);
             final ProgressDialog progress = new ProgressDialog(this);
             progress.setTitle("Loading");
             progress.setMessage("Wait while loading coordinates...");
@@ -118,9 +118,11 @@ public class CheckIn extends AppCompatActivity {
                     progress.dismiss();
                 }
             }.start();
+            getDistanceSet(2);
 
             Toast.makeText(CheckIn.this, "Your zone has been successfully saved", Toast.LENGTH_LONG).show();
             Log.d("LISTA", lista.toString());
+            getCoordinates(lista);
             Intent i = new Intent(this, BeaconFinder.class);
             startActivity(i);
         }
@@ -129,9 +131,68 @@ public class CheckIn extends AppCompatActivity {
     public void getDistanceSet(int i){
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         set = prefs.getStringSet("SET", new HashSet<String>());
-        TreeSet<String> treeSet =  new TreeSet<String>(set);
-        if(!treeSet.isEmpty()){
-        lista.add(i, treeSet);}
+        TreeSet<String> treeSet = new TreeSet<String>(set);
+        try{
+            assert !treeSet.isEmpty();
+            lista.add(i, treeSet);}
+        catch (Exception e){ e.printStackTrace(); }
+    }
+
+    public void getCoordinates(ArrayList<Set<String>> lista){
+        ArrayList<String> records = new ArrayList<>();
+        ArrayList<String> results = new ArrayList<>();
+        for(int j = 0; j<lista.size(); j++){
+            records.add(Arrays.toString(lista.get(j).toString().split(" ,"))); //biore wers
+            String[] str = records.get(j).split(", ");
+            for(int k = 0; k<str.length; k++){
+                if(!str[k].equals(""))    {
+                    String s = str[k].replaceAll("[^,\\w\\s]","");
+                    results.add(s);
+                Log.d("RESULTS", results.get(results.size() - 1));
+                }
+            }
+
+        }
+        getZone(results);
+    }
+
+    private void getZone(ArrayList<String> results){
+        ArrayList <String> macDistanceFunction = new ArrayList<>();
+        ArrayList <String> minDistances = new ArrayList<>();
+        ArrayList <String> maxDistances = new ArrayList<>();
+        ArrayList <String> tempMacs = new ArrayList<>();
+        for(int i = 0; i<results.size(); i++){
+            if(results.get(i).length()!=0) {    //jesli tablica nie jest pusta
+                String temp = results.get(i).substring(0, 12);  //sprawdzam pierwsze znaki, czyli macaddress
+                if (!tempMacs.contains(temp)) { //jesli nie mam jeszcze takiego macaddress
+                    tempMacs.add(temp);  //dodaje go do tablicy z macaddresses
+                    //macDistanceFunction.add(results.get(i).substring(0, 17)); //do tablicy z dystansami dodaje macaddress+distance
+                    minDistances.add(results.get(i).substring(0, 17).replace(",", "."));
+                    maxDistances.add(results.get(i).substring(0, 17).replace(",", "."));   //okej mam tablice z maxdistances i mindistances wraz z macaddress
+
+
+                } else { //jesli mam juz ten mac address
+                    for(int j = 0; j < minDistances.size(); j++) { //to sprawdzam w tablicy rekordy zawierajace dany macaddress
+                        if (minDistances.get(j).startsWith(temp) && Double.valueOf(results.get(i).substring(13, 17).replace(",", ".")) < Double.valueOf(minDistances.get(j).substring(13, 17).replace(",", "."))) {
+                            //jesli distance jest mniejszy
+                            minDistances.add(j, results.get(i).substring(13, 17).replace(",", "."));
+                        }
+                    }
+                    Log.d("DISTANCE MIN", minDistances.get(0));
+                    for(int j = 0; j < maxDistances.size(); j++) {
+                        if(maxDistances.get(j).startsWith(temp) && Double.valueOf(results.get(i).substring(13,17).replace(",", ".")) > Double.valueOf(maxDistances.get(j).substring(13,17).replace(",", "."))){
+                            maxDistances.add(j, results.get(i).substring(13,17).replace(",", "."));
+                            //jesli distance jest wiekszy
+                        }                                                                                                                                                //macDistanceFunction.add(t, results.get(i).substring(12, 17));
+                    }
+                    Log.d("DISTANCE MAX", maxDistances.get(0));
+                }
+            }
+        }
+
+
+
+
     }
 
 

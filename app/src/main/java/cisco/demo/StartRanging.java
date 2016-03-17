@@ -218,7 +218,7 @@ public class StartRanging {
             //mam wszystkie dostepne mac_add
             if (!allBeaconsInRange.contains(new RowBean(mac))) {
                 allBeaconsInRange.add(new RowBean(String.valueOf(distanceBeacons.get(mac)))); //jesli nie bylo takiego wczesniej - dodaje do listy
-                set.add(String.valueOf(distanceBeacons.get(mac)));
+                set.add(String.valueOf(mac + " " + distanceBeacons.get(mac)));
             }
         }
 
