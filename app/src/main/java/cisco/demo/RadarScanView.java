@@ -18,7 +18,7 @@ public class RadarScanView extends View
 {
     private static final int DEFAULT_WIDTH = 300;
     private static final int DEFAULT_HEIGHT = 300;
-
+    private boolean inZone;
     private int defaultWidth;
     private int defaultHeight;
     private int start;
@@ -160,6 +160,7 @@ public class RadarScanView extends View
     protected void onDraw(Canvas canvas)
     {
         super.onDraw(canvas);
+        inZone = false;
 
         //分别绘制四个圆
         canvas.drawCircle(centerX, centerY, radarRadius / 7, mPaintCircle);
@@ -171,9 +172,12 @@ public class RadarScanView extends View
         //        Shader shader = new SweepGradient(centerX, centerY, Color.TRANSPARENT, tailColor);
         Shader shader = new SweepGradient(centerX, centerY, Color.parseColor("#00A8D7A7"),
                 Color.parseColor("#ffA8D7A7"));
-        mPaintRadar.setShader(shader);
-        canvas.concat(matrix);
-        canvas.drawCircle(centerX, centerY, 3 * radarRadius / 7, mPaintRadar);
+
+
+            mPaintRadar.setShader(shader);
+            canvas.concat(matrix);
+            canvas.drawCircle(centerX, centerY, 3 * radarRadius / 7, mPaintRadar);
+
     }
 
     private int dip2px(Context context, float dipValue)

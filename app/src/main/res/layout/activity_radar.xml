@@ -5,12 +5,12 @@
 
     <cisco.demo.RadarScanView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></cisco.demo.RadarScanView>
+        android:layout_height="match_parent" />
 
     <cisco.demo.RandomTextView
         android:id="@+id/random_textview"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_centerInParent="true"/>
 
 </RelativeLayout>

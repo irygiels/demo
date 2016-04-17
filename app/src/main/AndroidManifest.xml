@@ -37,7 +37,7 @@
         <activity
             android:name=".BeaconFinder"
             android:label="@string/title_activity_ranging_and_displaying"
-            android:screenOrientation="portrait"/>
+            android:screenOrientation="portrait" />
 
         <service
             android:name="com.estimote.sdk.service.BeaconService"
@@ -48,18 +48,21 @@
         <activity
             android:name=".ChooseMode"
             android:label="@string/title_activity_choose_mode"
-            android:theme="@style/AppTheme.NoActionBar"/>
-        <activity
-            android:name=".AdminMode"/>
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".AdminMode" />
         <activity
             android:name=".CheckIn"
-            android:label="@string/title_activity_choose_mode"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".LoadCredentials"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".RegisterUser"
+            android:theme="@style/AppTheme.NoActionBar" />
         <service
             android:name=".BeaconSimplified"
             android:enabled="true"
-            android:exported="true" >
-        </service>
+            android:exported="true" />
     </application>
 
 </manifest>

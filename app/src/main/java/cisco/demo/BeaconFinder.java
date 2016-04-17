@@ -38,10 +38,6 @@ import java.util.Map;
 
 import static java.lang.Thread.sleep;
 
-//w tej klasie znajduje beacony
-//klikajac guzik 'checkin' zaznaczam wierzcholki trojkata, ktory bedzie stanowil moj obszar
-//do zrobienia -> informacje o obszarze musza byc wyslane do serwera
-//nastepnie jesli wchodze w ten obszar, wywoluje sie akcja (domyslnie - informacja dla serwera)
 
 public class BeaconFinder extends AppCompatActivity implements Caller {
 
@@ -52,6 +48,7 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
     private BeaconManager beaconManager; //potrzebny do interpretowania danych z beacona
     private Context that;
     public int n;
+    public List<String> allBeaconsInRangeSend;
     private String address;
     private JSONObject data; //jesli dane splywaja w json
 
@@ -78,14 +75,11 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
             barHide.hide();
         }
 
-        Log.d("beacon finder", "started");
-
         setContentView(R.layout.activity_ranging_and_displaying); //ustawienie layoutu
 
         currentBeacons = new HashMap<String, Timestamp>();
         macBeacons = new HashMap<String, List<RowBean>>();
         distanceBeacons = new HashMap<String, String>();
-
 
         beaconManager = new BeaconManager(this); //rozpocznij nasluchiwanie
         ourRegion = new Region("region", null, null, null); //w regionie (niezbedne do rozpoczecia)
@@ -101,6 +95,8 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
                 //jesli kliknales juz 4 razy, zacznij kolejne activity, w ktorym bedzie pokazywany distance
             }
         });
+
+
     }
 
     //rozpoczyna szukanie w okolicy po starcie activity
@@ -108,40 +104,15 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
     protected void onStart() {
         super.onStart();
         startRangingBeacons(); //listener do beaconow, dopisuje je do tablicy
-        startSendingKnownBeaconsToServer(); //tu bedzie mozna wywolac metode, na razie nie robi nic :)
         cleanOldBeaconsAfter(time); //wyczysc liste beaconow po jakims czasie (do ustawienia wyzej)
+
     }
 
-    private void startSendingKnownBeaconsToServer() {
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (threadsShouldBeRunning) {
-                    //updateView();
-                    //addUser();
-                    //co sie dzieje w tle
-                    try {
-                        sleep(5 * 1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-        t.start();
-    }
 
     //przy zatrzymaniu activity
     @Override
     protected void onStop() {
         super.onStop();
-        try {
-            beaconManager.stopRanging(ourRegion);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        beaconManager.disconnect();
-
         threadsShouldBeRunning = false; //nie ok, wylaczam funkcjonalnosci
     }
 
@@ -178,6 +149,7 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
     }
 
     private void startRangingBeacons() {
+
         beaconManager.setRangingListener(new BeaconManager.RangingListener() {
             @Override
             public void onBeaconsDiscovered(Region region, List<Beacon> beacons) {
@@ -300,6 +272,7 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
     public void handleResponse(JSONObject response) {
     }
 
+
     /*
 
     public void handleListResponse(JSONArray data) {
@@ -333,6 +306,7 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
     } */
 
 
+    //ta funkcja pozwala na wyswietlanie beaconow w panelu admina
     private void updateView(){
 
         List<RowBean> allBeaconsInRange = new ArrayList<RowBean>();
@@ -342,8 +316,7 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
                 if (!allBeaconsInRange.contains(new RowBean(mac))) {
                     allBeaconsInRange.add(new RowBean(mac));
                     allBeaconsInRangeDistance.add(new RowBean("distance: " + String.valueOf(distanceBeacons.get(mac)))); //jesli nie bylo takiego wczesniej - dodaje do listy
-
-            }
+                }
         }
         RowBean[] data = new RowBean[allBeaconsInRangeDistance.size()];
         data = allBeaconsInRangeDistance.toArray(data); //tworze tabele z dostepnych beaconow
@@ -357,6 +330,8 @@ public class BeaconFinder extends AppCompatActivity implements Caller {
         editor.putInt("BEACON_COUNT", k); //InputString: from the EditText
         editor.apply();
     }
+
+
     public void startRadar(View view){
         Intent i = new Intent (this, RadarActivity.class);
         startActivity(i);

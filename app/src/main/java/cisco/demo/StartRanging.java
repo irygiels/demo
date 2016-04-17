@@ -22,9 +22,12 @@ import com.estimote.sdk.BeaconManager;
 import com.estimote.sdk.Region;
 import com.estimote.sdk.Utils;
 
+import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.Inflater;
 
 import static java.lang.Thread.sleep;
 
@@ -48,10 +52,13 @@ public class StartRanging {
     private volatile boolean threadsShouldBeRunning = true; //czy wszystko ok - boolean
     private Map<String, Timestamp> currentBeacons;
     private Map<String, List<RowBean>> macBeacons;
-    int n;
+    Set<String> zone = new HashSet<String>();
+    ArrayList zoneList;
     Context cont;
+    boolean inZone;
     private Map<String, String> distanceBeacons;
-
+    private Map<String, String> maxBeacons;
+    private Map<String, String> minBeacons;
 
 
     public StartRanging(Context context) {
@@ -59,13 +66,11 @@ public class StartRanging {
         currentBeacons = new HashMap<String, Timestamp>();
         macBeacons = new HashMap<String, List<RowBean>>();
         distanceBeacons = new HashMap<String, String>();
-
         beaconManager = new BeaconManager(cont);
         beaconManager.setForegroundScanPeriod(1000, 2700);
         ourRegion = new Region("region", null, null, null);
         startRangingBeacons(cont);
         startSendingKnownBeaconsToServer();
-        cleanOldBeaconsAfter(time);
         //connectBeacons();
     }
 
@@ -83,6 +88,11 @@ public class StartRanging {
                     String distance = getDistance(beacon);
                     distanceBeacons.remove(key);
                     distanceBeacons.put(key, distance);
+                    /*if(!minBeacons.containsKey(key)){
+                        minBeacons.put(key, "0");}
+                    if(!maxBeacons.containsKey(key)){
+                        maxBeacons.put(key, "0");}*/
+
                 }
             }
         });
@@ -93,29 +103,12 @@ public class StartRanging {
                 try {
                     beaconManager.startRanging(ourRegion);
                 } catch (Throwable exc) {
-                    Log.i("BEACON", "startRanging in region doesnt work");
                     exc.printStackTrace();
 
                 }
             }
         });
 
-    }
-
-
-    public void connectBeacons() {
-        beaconManager.connect(new BeaconManager.ServiceReadyCallback() {
-            @Override
-            public void onServiceReady() {
-                try {
-                    beaconManager.startRanging(ourRegion);
-                } catch (Throwable exc) {
-                    Log.i("BEACON", "startRanging in region doesnt work");
-                    exc.printStackTrace();
-
-                }
-            }
-        });
     }
 
     private String getDistance(Beacon beacon) {
@@ -123,6 +116,23 @@ public class StartRanging {
         String wyn = String.format("%.2f", distance);
         return wyn;
     }
+
+   /* private Boolean inZone(String mac) {
+        getDistance(beacon);
+
+        return isInZone;
+    }*/
+
+    private double maxDistance(Beacon beacon){
+        double dis = 0.0;
+        return dis;
+    }
+
+    private double minDistance(Beacon beacon){
+        double dis = 0.0;
+        return dis;
+    }
+
     public com.estimote.sdk.Utils.Proximity getProximity(Beacon beacon) {
         return Utils.proximityFromAccuracy(Double.valueOf(getDistance(beacon)));
     }
@@ -141,9 +151,7 @@ public class StartRanging {
             @Override
             public void run() {
                 while (threadsShouldBeRunning) {
-                    startRadar(cont);
-                    send();
-                    //addUser();
+                    getZone();
                     //co sie dzieje w tle
                     try {
                         sleep(5 * 1000);
@@ -156,80 +164,92 @@ public class StartRanging {
         t.start();
     }
 
-    private void cleanOldBeaconsAfter(final Double timeInHours) {
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                while (threadsShouldBeRunning) {
-                    try {
-                        sleep(3000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    Date date = new Date();
-                    Timestamp twoHoursAgo = new Timestamp(date.getTime() - (long) (time * MINUTE));
-                    try {
-                        for (Map.Entry<String, Timestamp> entry : currentBeacons.entrySet()) { //jesli przez ostatnie 2 h nie pojawil sie beacon z danym identyfikatorem - usuwam go z listy
-                            String key = entry.getKey();
-                            Timestamp timestamp = entry.getValue();
-                            if (timestamp.before(twoHoursAgo)) {
-                                currentBeacons.remove(key); //usuwam
-                                macBeacons.remove(key);
-                            }
-                        }
-                    }catch (Exception e){e.printStackTrace(); }
 
-                }
-            }
-        };
 
-        t.start();
-    }
-
-    private void send(){
-
-            List<RowBean> allBeaconsInRange = new ArrayList<RowBean>();
-
-            for(String mac: macBeacons.keySet()){
-                //mam wszystkie dostepne mac_add
-                if(!allBeaconsInRange.contains(new RowBean(mac))) {
-                    allBeaconsInRange.add(new RowBean(mac)); //jesli nie bylo takiego wczesniej - dodaje do listy
-                }
-            }
-         n=allBeaconsInRange.size();
-         Log.d("n value", String.valueOf(n));
-
-    }
-
-    public int getDataLength() {
-        return n;
-    }
-
-    public void startRadar(Context context){
-        int k = getDataLength();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt("NUMBER_I_NEED", k); //InputString: from the EditText
-
-        List<RowBean> allBeaconsInRange = new ArrayList<RowBean>();
+    public void getZone(){
+        zoneList = new ArrayList<String>();
+        zoneList.clear();
+        maxBeacons = new HashMap<String, String>();
+        minBeacons = new HashMap<String, String>();
         Set<String> set = new HashSet<String>();
+        List<String> allBeaconsInRange = new ArrayList<>();
+        List<String> allBeaconsInRangeSend = new ArrayList<>();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(cont);
+        SharedPreferences.Editor editor = prefs.edit();
 
+        zone = prefs.getStringSet("ZONE", new HashSet<String>()); //strefa wpisana w checkinie
+        //otrzymuje ja jako SET<String>
+        //chce ja teraz przerzucic do hashmapy
+
+        zoneList.add(zone);
+        getCoordinates(zoneList);
+
+
+        //Log.d("MOJE DANE", minBeacons.keySet().toString() + " " + maxBeacons.keySet().toString());
         for(String mac: macBeacons.keySet()) {
-            //mam wszystkie dostepne mac_add
-            if (!allBeaconsInRange.contains(new RowBean(mac))) {
-                allBeaconsInRange.add(new RowBean(String.valueOf(distanceBeacons.get(mac)))); //jesli nie bylo takiego wczesniej - dodaje do listy
+            if (!allBeaconsInRange.contains(mac)) {
+                allBeaconsInRange.add(mac);
+                allBeaconsInRangeSend.add(mac + " " + String.valueOf(distanceBeacons.get(mac)));
+                try{
+                    if (Double.valueOf(distanceBeacons.get(mac).replace(",", ".")) < Double.valueOf(maxBeacons.get(mac).replace(",", "."))+0.2
+                            && Double.valueOf(distanceBeacons.get(mac).replace(",", ".")) > Double.valueOf(minBeacons.get(mac).replace(",", "."))-0.2) {
+                        inZone = true;
+                    }
+                }catch (Exception e){ e.printStackTrace(); }
                 set.add(String.valueOf(mac + " " + distanceBeacons.get(mac)));
             }
         }
+        Log.d("JAKIES DANE", String.valueOf(inZone));
 
+        int n = allBeaconsInRange.size();
+        editor.putBoolean("INZONE", inZone);
+        inZone = false;
+        editor.putInt("NUMBER_I_NEED", n);
         editor.putStringSet("SET", set);
         editor.putInt("SIZE", allBeaconsInRange.size());
-        editor.apply();
-        Log.d("data value", String.valueOf(set));
-        //context.startActivity(startRadarActivity);
+        editor.putString("LISTA", allBeaconsInRangeSend.toString());
 
+        editor.apply();
+    }
+
+
+    //ponizej funkcja, ktorej nie uzywam, aleeee - moze sie przydac jeszcze pozniej
+    //zmienia liste na koordynaty oddzielnie
+
+    public void getCoordinates(ArrayList<Set<String>> lista){
+        ArrayList<String> records = new ArrayList<>();
+        ArrayList<String> results = new ArrayList<>();
+        for(int j = 0; j<lista.size(); j++){
+            records.add(Arrays.toString(lista.get(j).toString().split(" ,"))); //biore wers
+            String[] str = records.get(j).split(", ");
+            for(int k = 0; k<str.length; k++){
+                if(!str[k].equals(""))    {
+                    String s = str[k].replaceAll("[^:,\\w\\s]","");
+                    String[] addToMap = s.split(" ");
+                    String myKey="";
+                    String myValue="";
+                    try{
+                        myKey = "["+addToMap[0]+"]";
+                        myValue = addToMap[1];}
+                    catch (Exception e){e.printStackTrace();}
+                    //results.add(s);
+                    if(!myKey.equals("") && !minBeacons.containsKey(myKey) || (minBeacons.containsKey(myKey)
+                            && Double.valueOf(minBeacons.get(myKey).replace(",", ".")) > Double.valueOf(myValue.replace(",", ".")))){
+                        if(minBeacons.containsKey(myKey)){ minBeacons.remove(myKey); }
+                        minBeacons.put(myKey, myValue);}
+                    if(!myKey.equals("") && !maxBeacons.containsKey(myKey) || (maxBeacons.containsKey(myKey)
+                            && Double.valueOf(maxBeacons.get(myKey).replace(",", ".")) < Double.valueOf(myValue.replace(",", ".")))){
+                        if(maxBeacons.containsKey(myKey)){
+                            maxBeacons.remove(myKey); }
+                        maxBeacons.put(myKey, myValue);}
+                    //Log.d("RESULTS", results.get(results.size() - 1));
+                }
+            }
+
+        }
 
     }
+
 
 
 }

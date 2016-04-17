@@ -6,4 +6,5 @@
     <string name="title_activity_ranging_and_displaying">rangingAndDisplaying</string>
     <string name="facebook_app_id">377338175803354</string>
     <string name="title_activity_choose_mode">ChooseMode</string>
+    <string name="title_activity_register_user">RegisterUser</string>
 </resources>

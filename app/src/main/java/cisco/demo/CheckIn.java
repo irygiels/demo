@@ -26,8 +26,10 @@ public class CheckIn extends AppCompatActivity {
 
     TextView textView;
     ImageView imageView;
+    Set toSet;
     ArrayList<Set<String>> lista = new ArrayList<>();
     Set<String> set = new HashSet<String>();
+    boolean zoneChecked;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +66,7 @@ public class CheckIn extends AppCompatActivity {
     public void checkIn(View view) throws InterruptedException {
         if(textView.getText().toString().equals("CHECK IN! (3)")){
             lista = new ArrayList<>();
+            lista.clear();
             final ProgressDialog progress = new ProgressDialog(this);
             progress.setTitle("Loading");
             progress.setMessage("Wait while loading coordinates...");
@@ -121,8 +124,15 @@ public class CheckIn extends AppCompatActivity {
             getDistanceSet(2);
 
             Toast.makeText(CheckIn.this, "Your zone has been successfully saved", Toast.LENGTH_LONG).show();
-            Log.d("LISTA", lista.toString());
-            getCoordinates(lista);
+            Toast.makeText(CheckIn.this, lista.toString(), Toast.LENGTH_LONG).show();
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences.Editor editor = prefs.edit();
+            toSet = new HashSet(lista);
+            editor.putStringSet("ZONE", toSet); //InputString: from the EditText
+            editor.apply();
+            //getCoordinates(lista);
+            toSet.clear();
             Intent i = new Intent(this, BeaconFinder.class);
             startActivity(i);
         }
@@ -137,63 +147,5 @@ public class CheckIn extends AppCompatActivity {
             lista.add(i, treeSet);}
         catch (Exception e){ e.printStackTrace(); }
     }
-
-    public void getCoordinates(ArrayList<Set<String>> lista){
-        ArrayList<String> records = new ArrayList<>();
-        ArrayList<String> results = new ArrayList<>();
-        for(int j = 0; j<lista.size(); j++){
-            records.add(Arrays.toString(lista.get(j).toString().split(" ,"))); //biore wers
-            String[] str = records.get(j).split(", ");
-            for(int k = 0; k<str.length; k++){
-                if(!str[k].equals(""))    {
-                    String s = str[k].replaceAll("[^,\\w\\s]","");
-                    results.add(s);
-                Log.d("RESULTS", results.get(results.size() - 1));
-                }
-            }
-
-        }
-        getZone(results);
-    }
-
-    private void getZone(ArrayList<String> results){
-        ArrayList <String> macDistanceFunction = new ArrayList<>();
-        ArrayList <String> minDistances = new ArrayList<>();
-        ArrayList <String> maxDistances = new ArrayList<>();
-        ArrayList <String> tempMacs = new ArrayList<>();
-        for(int i = 0; i<results.size(); i++){
-            if(results.get(i).length()!=0) {    //jesli tablica nie jest pusta
-                String temp = results.get(i).substring(0, 12);  //sprawdzam pierwsze znaki, czyli macaddress
-                if (!tempMacs.contains(temp)) { //jesli nie mam jeszcze takiego macaddress
-                    tempMacs.add(temp);  //dodaje go do tablicy z macaddresses
-                    //macDistanceFunction.add(results.get(i).substring(0, 17)); //do tablicy z dystansami dodaje macaddress+distance
-                    minDistances.add(results.get(i).substring(0, 17).replace(",", "."));
-                    maxDistances.add(results.get(i).substring(0, 17).replace(",", "."));   //okej mam tablice z maxdistances i mindistances wraz z macaddress
-
-
-                } else { //jesli mam juz ten mac address
-                    for(int j = 0; j < minDistances.size(); j++) { //to sprawdzam w tablicy rekordy zawierajace dany macaddress
-                        if (minDistances.get(j).startsWith(temp) && Double.valueOf(results.get(i).substring(13, 17).replace(",", ".")) < Double.valueOf(minDistances.get(j).substring(13, 17).replace(",", "."))) {
-                            //jesli distance jest mniejszy
-                            minDistances.add(j, results.get(i).substring(13, 17).replace(",", "."));
-                        }
-                    }
-                    Log.d("DISTANCE MIN", minDistances.get(0));
-                    for(int j = 0; j < maxDistances.size(); j++) {
-                        if(maxDistances.get(j).startsWith(temp) && Double.valueOf(results.get(i).substring(13,17).replace(",", ".")) > Double.valueOf(maxDistances.get(j).substring(13,17).replace(",", "."))){
-                            maxDistances.add(j, results.get(i).substring(13,17).replace(",", "."));
-                            //jesli distance jest wiekszy
-                        }                                                                                                                                                //macDistanceFunction.add(t, results.get(i).substring(12, 17));
-                    }
-                    Log.d("DISTANCE MAX", maxDistances.get(0));
-                }
-            }
-        }
-
-
-
-
-    }
-
 
 }

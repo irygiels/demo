@@ -3,16 +3,13 @@ package cisco.demo;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 //ta klasa odpowiada tylko za ekran glowny - jesli BT nie jest wlaczony - pytam o access
 //jest tu po to, zeby mozna bylo ja scustomizowac i zeby byla pozniej ladna

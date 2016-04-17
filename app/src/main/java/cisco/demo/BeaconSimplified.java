@@ -37,17 +37,7 @@ public class BeaconSimplified extends Service {
         //Nazwa akcji dla Android Manifest
         BroadcastActionName = "BEACON";
         new StartRanging(getApplicationContext());
-        //startSendingKnownBeaconsToServer(); //tu bedzie mozna wywolac metode, na razie nie robi nic :)
-        //cleanOldBeaconsAfter(time); //wyczysc liste beaconow po jakims czasie (do ustawienia wyzej)
 
-        //new StartRangingBeacons(getApplicationContext());
-
-        //Log.i("BEACON", "started ranging");
-
-        //wykorzystujac obiekt klasy UDPSocketListiner moge szybko otwierac sockety UDP w kazdej z klas.
-        //Motoda "startListenForUDPBroadcast" tworzy thread i otwiera socket. Port nasłuchuje broadcast (255.255.255.255), argument metody "PORT" specyfikuje port nasluchiwania.
-
-        //IntentFilter przyjmuje argument, ktory jest nazwa akcji. //Powiazane z mMessageReceiver
         return Service.START_NOT_STICKY;
     }
 
