@@ -199,7 +199,7 @@ public class StartRanging {
                 set.add(String.valueOf(mac + " " + distanceBeacons.get(mac)));
             }
         }
-        Log.d("JAKIES DANE", String.valueOf(inZone));
+        //Log.d("JAKIES DANE", String.valueOf(inZone));
 
         int n = allBeaconsInRange.size();
         editor.putBoolean("INZONE", inZone);

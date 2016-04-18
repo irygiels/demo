@@ -45,6 +45,9 @@ public class MainActivity extends ActionBarActivity {
         Intent BeaconRangingAndDisplay = new Intent(that, BeaconSimplified.class);
         that.startService(BeaconRangingAndDisplay);
 
+        Intent MQTT = new Intent(that, MQTTService.class);
+        that.startService(MQTT);
+
     }
 
     @Override
