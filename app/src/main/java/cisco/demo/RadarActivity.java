@@ -14,6 +14,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.mobileconnectors.cognito.CognitoSyncManager;
+import com.amazonaws.mobileconnectors.cognito.Dataset;
+import com.amazonaws.mobileconnectors.cognito.DefaultSyncCallback;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+
 import static java.lang.Thread.sleep;
 
 public class RadarActivity extends AppCompatActivity {
@@ -126,7 +134,32 @@ public class RadarActivity extends AppCompatActivity {
         stan = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean("INZONE", false);
         if(stan && !stanBefore){
             if(user!=null){
-            Toast.makeText(RadarActivity.this, "HI " + user + "!", Toast.LENGTH_SHORT).show();}
+            Toast.makeText(RadarActivity.this, "HI " + user + "!", Toast.LENGTH_SHORT).show();
+                // initialize a credentials provider object with your Activity’s context and
+// the values from your identity pool
+                CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(
+                        getApplicationContext(), // get the context for the current activity
+                        "4019-8523-3797", // your AWS Account id
+                        "us-east-1_SLmd5bSoJ", // your identity pool id
+                        "arn:aws:iam::401985233797:role/Cognito_AmrestAuth_Role",// an authenticated role ARN
+                        "arn:aws:iam::401985233797:role/Cognito_AmrestUnauth_Role", // an unauthenticated role ARN
+                        Regions.US_EAST_1 //Region
+                );
+
+
+                AmazonDynamoDBClient ddb = new AmazonDynamoDBClient(credentialsProvider);
+                ddb.setRegion(Region.getRegion(Regions.US_EAST_1));
+
+                CognitoSyncManager syncClient = new CognitoSyncManager(
+                        getApplicationContext(),
+                        Regions.US_EAST_1,
+                        credentialsProvider
+                );
+
+                Dataset dataset = syncClient.openOrCreateDataset("amrestUsers");
+                dataset.put("id", user);
+                dataset.put("zone", String.valueOf(1));
+            }
             else {
                 Toast.makeText(RadarActivity.this, "HI ADMIN!", Toast.LENGTH_SHORT).show();
             }
